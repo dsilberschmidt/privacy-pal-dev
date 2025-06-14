@@ -1,33 +1,29 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('policies');
-  const resetBtn = document.getElementById('resetBtn');
 
-  chrome.runtime.sendMessage({ action: 'getAllPolicies' }, (policies) => {
-    if (!policies || policies.length === 0) {
-      container.textContent = 'No policies saved yet.';
+document.addEventListener("DOMContentLoaded", () => {
+  chrome.runtime.sendMessage({ action: "getAllPolicies" }, (policies) => {
+    const list = document.getElementById("policyList");
+    list.innerHTML = "";
+
+    if (policies.length === 0) {
+      list.innerHTML = "<li>No policies saved yet.</li>";
       return;
     }
 
-    const list = document.createElement('ul');
-    policies.forEach(policy => {
-      const item = document.createElement('li');
-      const link = document.createElement('a');
-      link.href = policy.url;
-      link.textContent = `${policy.site} (${new Date(policy.timestamp).toLocaleDateString()})`;
-      link.target = '_blank';
-      item.appendChild(link);
-      list.appendChild(item);
-    });
+    policies.sort((a, b) => b.timestamp - a.timestamp);
 
-    container.innerHTML = '';
-    container.appendChild(list);
+    policies.forEach((p) => {
+      const li = document.createElement("li");
+      const date = new Date(p.timestamp).toLocaleString();
+      const summary = p.analysis ? `<div class='summary'><strong>AI Summary:</strong><br>${p.analysis}</div>` : "";
+      li.innerHTML = `<strong>${p.site}</strong> — ${date}<br><a href="${p.url}" target="_blank">${p.url}</a>${summary}`;
+      list.appendChild(li);
+    });
   });
 
-  resetBtn.addEventListener('click', () => {
-    if (confirm("Are you sure you want to delete all stored policies?")) {
-      chrome.runtime.sendMessage({ action: 'resetDB' }, (res) => {
-        alert("✅ DB cleared!");
-        location.reload();
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if (confirm("Are you sure you want to delete all saved policies?")) {
+      chrome.runtime.sendMessage({ action: "resetDB" }, (res) => {
+        if (res.success) location.reload();
       });
     }
   });
