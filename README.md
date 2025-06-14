@@ -49,3 +49,14 @@ by Daniel (@Cactus Sediento) & ChatGPT
 We need Privacy.  
 Privacy needs us.
 
+---
+
+## 🧠 AIML API Integration (optional)
+
+To enable local analysis of privacy policies using [AIMLAPI](https://aimlapi.com):
+
+1. Copy `config.template.js` to `config.js`
+2. Paste your AIML API key into `config.js`
+3. When viewing a policy, the extension will generate an AI summary and store it locally
+
+> ⚠️ `config.js` is excluded from Git to protect your private key.
