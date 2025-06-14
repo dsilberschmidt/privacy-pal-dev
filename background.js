@@ -1,6 +1,8 @@
 
 import { savePolicy, findPolicyByHash, findLastPolicyBySite, getAllPolicies, clearPolicies } from './db.js';
 
+console.log('[PrivacyPal] Service worker started.');
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[PrivacyPal] Received message:', message);
 
