@@ -1,22 +1,24 @@
 
-function isPolicyPage(url) {
-  const policyKeywords = ['privacy', 'terms', 'policy'];
-  const { pathname } = new URL(url);
-  return policyKeywords.some(kw => pathname.toLowerCase().includes(kw));
+function extractVisibleText() {
+  return Array.from(document.body.querySelectorAll('*'))
+    .filter(el => el.offsetParent !== null)
+    .map(el => el.innerText || '')
+    .join('\n')
+    .trim();
 }
 
-function extractVisibleText() {
-  return document.body.innerText;
+function isPolicyPage(url) {
+  return /privacy|terms|policy|legal/i.test(url);
 }
 
 function hashText(text) {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
-  return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
-    return Array.from(new Uint8Array(hashBuffer))
+  return crypto.subtle.digest('SHA-256', data).then(hashBuffer =>
+    Array.from(new Uint8Array(hashBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  });
+      .join('')
+  );
 }
 
 if (isPolicyPage(window.location.href)) {
@@ -30,5 +32,6 @@ if (isPolicyPage(window.location.href)) {
       action: 'checkAndSavePolicy',
       data: { site, url, timestamp, text, hash }
     });
+    console.log('[PrivacyPal] Policy sent to background:', { site, url, hash });
   });
 }
