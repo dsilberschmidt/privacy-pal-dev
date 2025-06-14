@@ -1,4 +1,3 @@
-
 importScripts("db.js");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -14,5 +13,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       }
     });
+  }
+
+  if (message.action === 'resetDB') {
+    resetDB((err) => {
+      if (err) {
+        console.error("❌ Failed to reset DB");
+        sendResponse({ success: false });
+      } else {
+        console.log("✅ DB cleared by popup");
+        sendResponse({ success: true });
+      }
+    });
+    return true; // Needed to use async sendResponse
+  }
+
+  if (message.action === 'getAllPolicies') {
+    getAllPolicies((err, policies) => {
+      sendResponse(policies || []);
+    });
+    return true; // Needed to use async sendResponse
   }
 });
