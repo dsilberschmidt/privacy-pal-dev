@@ -14,27 +14,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  const policyList = document.getElementById('policyList');
-  const resetBtn = document.getElementById('resetBtn');
-
-  chrome.storage.local.get(null, function (items) {
-    const keys = Object.keys(items).filter(key => key.startsWith("policy:"));
-    if (keys.length === 0) {
-      policyList.innerHTML = "<li>No policies saved.</li>";
-      return;
+  document.getElementById('resetBtn').addEventListener("click", function () {
+    if (confirm("Are you sure you want to delete all saved policies?")) {
+      chrome.runtime.sendMessage({ action: 'resetDB' }, () => location.reload());
     }
-    policyList.innerHTML = "";
-    keys.forEach(key => {
-      const entry = items[key];
-      const li = document.createElement("li");
-      li.textContent = `[${entry.timestamp}] ${entry.domain}`;
-      policyList.appendChild(li);
-    });
   });
 
-  resetBtn.addEventListener("click", function () {
-    if (confirm("Are you sure you want to delete all saved policies?")) {
-      chrome.storage.local.clear(() => location.reload());
-    }
+  document.getElementById('pingWorker').addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: 'getAllPolicies' }, (res) => {
+      console.log('[PrivacyPal] Pinged background, got:', res);
+    });
   });
 });
