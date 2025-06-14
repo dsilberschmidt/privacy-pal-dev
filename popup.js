@@ -1,36 +1,40 @@
 
-document.addEventListener("DOMContentLoaded", () => {
-  const list = document.getElementById("policyList");
+import { getAllPolicies, clearPolicies } from './db.js';
 
-  chrome.runtime.sendMessage({ action: "getAllPolicies" }, (policies) => {
-    list.innerHTML = "";
+function render(policies) {
+  const container = document.getElementById('policy-list');
+  container.innerHTML = '';
+  const grouped = {};
 
-    if (!policies || policies.length === 0) {
-      list.innerHTML = "<li>No policies saved yet.</li>";
-      return;
-    }
+  policies.forEach(p => {
+    if (!grouped[p.site]) grouped[p.site] = [];
+    grouped[p.site].push(p);
+  });
 
-    policies.sort((a, b) => b.timestamp - a.timestamp);
-
-    policies.forEach((p) => {
-      const li = document.createElement("li");
-      const date = new Date(p.timestamp).toLocaleString();
-      const summary = p.analysis ? `<div class='summary'><strong>AI Summary:</strong><br>${p.analysis}</div>` : "";
-      li.innerHTML = `<strong>${p.site}</strong> - ${date}<br><a href="${p.url}" target="_blank">${p.url}</a>${summary}`;
-      list.appendChild(li);
+  Object.entries(grouped).forEach(([site, versions]) => {
+    versions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const group = document.createElement('div');
+    group.className = 'policy';
+    group.innerHTML = `<div class="site">${site}</div>`;
+    versions.forEach(v => {
+      const block = document.createElement('div');
+      block.innerHTML = `
+        <div class="timestamp">${v.timestamp}</div>
+        <div class="content">${v.content.slice(0, 300)}...</div>
+      `;
+      group.appendChild(block);
     });
+    container.appendChild(group);
   });
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    if (confirm("Are you sure you want to delete all saved policies?")) {
-      chrome.runtime.sendMessage({ action: "resetDB" }, (res) => {
-        if (res && res.success) {
-          alert("✅ DB reset successfully.");
-          location.reload();
-        } else {
-          alert("❌ Failed to reset DB.");
-        }
-      });
-    }
-  });
-});
+  if (policies.length === 0) {
+    container.innerText = 'No saved policies yet.';
+  }
+}
+
+document.getElementById('reset').onclick = async () => {
+  await clearPolicies();
+  render([]);
+};
+
+getAllPolicies().then(render);

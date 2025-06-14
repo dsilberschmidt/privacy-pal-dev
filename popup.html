@@ -1,13 +1,20 @@
+
 <!DOCTYPE html>
 <html>
 <head>
   <title>PrivacyPal</title>
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { font-family: sans-serif; font-size: 14px; padding: 10px; width: 320px; }
+    .policy { margin-bottom: 12px; border-bottom: 1px solid #ccc; padding-bottom: 8px; }
+    .site { font-weight: bold; }
+    .timestamp { color: #666; font-size: 12px; }
+    .content { margin-top: 5px; white-space: pre-line; max-height: 100px; overflow-y: auto; }
+  </style>
 </head>
 <body>
-  <h1>Saved Policies</h1>
-  <ul id="policyList"><li>Loading...</li></ul>
-  <button id="resetBtn">Reset DB</button>
-  <script src="popup.js"></script>
+  <h2>PrivacyPal</h2>
+  <div id="policy-list">Loading...</div>
+  <button id="reset">Reset DB</button>
+  <script type="module" src="./popup.js"></script>
 </body>
 </html>
