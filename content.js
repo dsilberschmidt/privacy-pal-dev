@@ -1,7 +1,8 @@
 
 function isPolicyPage(url) {
   const policyKeywords = ['privacy', 'terms', 'policy'];
-  return policyKeywords.some(kw => url.toLowerCase().includes(kw));
+  const { pathname } = new URL(url);
+  return policyKeywords.some(kw => pathname.toLowerCase().includes(kw));
 }
 
 function extractVisibleText() {
