@@ -1,28 +1,48 @@
 
-document.addEventListener('DOMContentLoaded', function () {
-  const tabs = document.querySelectorAll('.tab');
-  const tabContents = document.querySelectorAll('.tab-content');
+document.addEventListener("DOMContentLoaded", () => {
+  const policyList = document.getElementById("policyList");
+  const resetBtn = document.getElementById("resetBtn");
 
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tabContents.forEach(tc => tc.classList.remove('active'));
+  // Mostrar las políticas almacenadas
+  async function renderPolicies() {
+    const db = await openDB();
+    const tx = db.transaction("policies", "readonly");
+    const store = tx.objectStore("policies");
 
-      tab.classList.add('active');
-      const target = document.getElementById(tab.dataset.tab);
-      if (target) target.classList.add('active');
-    });
+    const request = store.getAll();
+    request.onsuccess = (event) => {
+      const policies = event.target.result;
+      policyList.innerHTML = "";
+      if (policies.length === 0) {
+        policyList.innerHTML = "<li>No policies saved.</li>";
+        return;
+      }
+
+      for (const policy of policies) {
+        const li = document.createElement("li");
+        li.textContent = `${policy.domain} - ${new Date(policy.timestamp).toLocaleString()}`;
+        policyList.appendChild(li);
+      }
+    };
+  }
+
+  resetBtn.addEventListener("click", async () => {
+    const db = await openDB();
+    const tx = db.transaction("policies", "readwrite");
+    tx.objectStore("policies").clear();
+    tx.oncomplete = () => {
+      renderPolicies(); // Refrescar vista tras limpiar
+    };
   });
 
-  document.getElementById('resetBtn').addEventListener("click", function () {
-    if (confirm("Are you sure you want to delete all saved policies?")) {
-      chrome.runtime.sendMessage({ action: 'resetDB' }, () => location.reload());
-    }
-  });
-
-  document.getElementById('pingWorker').addEventListener("click", () => {
-    chrome.runtime.sendMessage({ action: 'getAllPolicies' }, (res) => {
-      console.log('[PrivacyPal] Pinged background, got:', res);
-    });
-  });
+  renderPolicies();
 });
+
+// Necesario para abrir IndexedDB
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("PrivacyPalDB", 1);
+    request.onerror = () => reject("DB failed to open");
+    request.onsuccess = () => resolve(request.result);
+  });
+}
