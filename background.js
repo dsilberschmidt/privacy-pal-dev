@@ -1,67 +1,43 @@
-importScripts("db.js", "config.js");
+
+import { savePolicy, findPolicyByHash, findLastPolicyBySite } from './db.js';
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'checkAndSavePolicy') {
-    const { site, url, timestamp, text, hash } = message.data;
+    const { site, url, text, timestamp, hash } = message.data;
 
-    findPolicyByHash(hash, (err, existing) => {
+    findPolicyByHash(hash).then(existing => {
       if (existing) {
-        console.log('[PrivacyPal] Policy already saved (hash match)');
-      } else {
-        const policy = { site, url, timestamp, text, hash };
-        if (typeof AIML_API_KEY === "string" && AIML_API_KEY.trim() !== "") {
-          fetch("https://api.aimlapi.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${AIML_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: "gpt-3.5-turbo",
-              messages: [
-                { role: "system", content: "You are a privacy assistant. Summarize key risks and user rights in this privacy policy." },
-                { role: "user", content: text.slice(0, 8000) }
-              ]
-            })
-          })
-          .then(res => res.json())
-          .then(data => {
-            policy.analysis = data.choices?.[0]?.message?.content || "";
-            savePolicy(policy, () => {
-              console.log(`[PrivacyPal] Saved + analyzed policy from ${site}`);
-            });
-          })
-          .catch(err => {
-            console.error("AIML fetch error:", err);
-            savePolicy(policy, () => {
-              console.log(`[PrivacyPal] Saved policy without analysis`);
-            });
-          });
-        } else {
-          savePolicy(policy, () => {
-            console.log(`[PrivacyPal] Saved policy (no analysis) from ${site}`);
-          });
-        }
+        console.log('[PrivacyPal] Duplicate policy. Not saving.');
+        return sendResponse({ duplicate: true });
       }
-    });
-  }
 
-  if (message.action === 'resetDB') {
-    resetDB((err) => {
-      if (err) {
-        console.error("[PrivacyPal] ❌ Failed to reset DB");
-        sendResponse({ success: false });
-      } else {
-        console.log("[PrivacyPal] ✅ DB reset successfully");
-        sendResponse({ success: true });
-      }
+      findLastPolicyBySite(site).then(previous => {
+        const previousHash = previous?.hash || null;
+        const policy = { site, url, text, timestamp, hash, previousHash };
+        savePolicy(policy).then(() => {
+          console.log(`[PrivacyPal] Saved new version for ${site}`);
+          sendResponse({ saved: true });
+        }).catch(err => {
+          console.error('[PrivacyPal] Failed to save policy', err);
+          sendResponse({ saved: false });
+        });
+      });
     });
-    return true; // IMPORTANTE para permitir sendResponse async
+
+    return true; // Keep sendResponse alive async
   }
 
   if (message.action === 'getAllPolicies') {
-    getAllPolicies((err, policies) => {
-      sendResponse(policies || []);
+    import('./db.js').then(({ getAllPolicies }) => {
+      getAllPolicies().then(sendResponse);
+    });
+    return true;
+  }
+
+  if (message.action === 'resetDB') {
+    import('./db.js').then(({ clearPolicies }) => {
+      clearPolicies().then(() => sendResponse({ success: true }))
+        .catch(() => sendResponse({ success: false }));
     });
     return true;
   }
