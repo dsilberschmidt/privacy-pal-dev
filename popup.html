@@ -3,11 +3,27 @@
 <head>
   <title>PrivacyPal</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .tab { display: inline-block; margin-right: 10px; cursor: pointer; }
+    .tab.active { font-weight: bold; text-decoration: underline; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
 </head>
 <body>
-  <h1>Saved Policies</h1>
-  <ul id="policyList"><li>Loading...</li></ul>
-  <button id="resetBtn">Reset DB</button>
+  <div>
+    <span class="tab active" data-tab="policies">Policies</span>
+    <span class="tab" data-tab="summary">AI Summary</span>
+  </div>
+  <div id="policies" class="tab-content active">
+    <h1>Saved Policies</h1>
+    <ul id="policyList"><li>Loading...</li></ul>
+    <button id="resetBtn">Reset DB</button>
+  </div>
+  <div id="summary" class="tab-content">
+    <h1>AI Summary</h1>
+    <div id="aiSummary">Select a policy to view analysis.</div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

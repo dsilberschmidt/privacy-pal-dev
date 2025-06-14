@@ -1,36 +1,40 @@
 
-document.addEventListener("DOMContentLoaded", () => {
-  const list = document.getElementById("policyList");
+document.addEventListener('DOMContentLoaded', function () {
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
 
-  chrome.runtime.sendMessage({ action: "getAllPolicies" }, (policies) => {
-    list.innerHTML = "";
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(tc => tc.classList.remove('active'));
 
-    if (!policies || policies.length === 0) {
-      list.innerHTML = "<li>No policies saved yet.</li>";
-      return;
-    }
-
-    policies.sort((a, b) => b.timestamp - a.timestamp);
-
-    policies.forEach((p) => {
-      const li = document.createElement("li");
-      const date = new Date(p.timestamp).toLocaleString();
-      const summary = p.analysis ? `<div class='summary'><strong>AI Summary:</strong><br>${p.analysis}</div>` : "";
-      li.innerHTML = `<strong>${p.site}</strong> - ${date}<br><a href="${p.url}" target="_blank">${p.url}</a>${summary}`;
-      list.appendChild(li);
+      tab.classList.add('active');
+      const target = document.getElementById(tab.dataset.tab);
+      if (target) target.classList.add('active');
     });
   });
 
-  document.getElementById("resetBtn").addEventListener("click", () => {
+  const policyList = document.getElementById('policyList');
+  const resetBtn = document.getElementById('resetBtn');
+
+  chrome.storage.local.get(null, function (items) {
+    const keys = Object.keys(items).filter(key => key.startsWith("policy:"));
+    if (keys.length === 0) {
+      policyList.innerHTML = "<li>No policies saved.</li>";
+      return;
+    }
+    policyList.innerHTML = "";
+    keys.forEach(key => {
+      const entry = items[key];
+      const li = document.createElement("li");
+      li.textContent = `[${entry.timestamp}] ${entry.domain}`;
+      policyList.appendChild(li);
+    });
+  });
+
+  resetBtn.addEventListener("click", function () {
     if (confirm("Are you sure you want to delete all saved policies?")) {
-      chrome.runtime.sendMessage({ action: "resetDB" }, (res) => {
-        if (res && res.success) {
-          alert("✅ DB reset successfully.");
-          location.reload();
-        } else {
-          alert("❌ Failed to reset DB.");
-        }
-      });
+      chrome.storage.local.clear(() => location.reload());
     }
   });
 });
