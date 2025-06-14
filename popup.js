@@ -1,7 +1,8 @@
 
 document.addEventListener("DOMContentLoaded", () => {
+  const list = document.getElementById("policyList");
+
   chrome.runtime.sendMessage({ action: "getAllPolicies" }, (policies) => {
-    const list = document.getElementById("policyList");
     list.innerHTML = "";
 
     if (!policies || policies.length === 0) {
@@ -23,7 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("resetBtn").addEventListener("click", () => {
     if (confirm("Are you sure you want to delete all saved policies?")) {
       chrome.runtime.sendMessage({ action: "resetDB" }, (res) => {
-        if (res.success) location.reload();
+        if (res && res.success) {
+          alert("✅ DB reset successfully.");
+          location.reload();
+        } else {
+          alert("❌ Failed to reset DB.");
+        }
       });
     }
   });

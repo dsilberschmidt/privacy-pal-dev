@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               model: "gpt-3.5-turbo",
               messages: [
                 { role: "system", content: "You are a privacy assistant. Summarize key risks and user rights in this privacy policy." },
-                { role: "user", content: text.slice(0, 8000) } // truncar si es necesario
+                { role: "user", content: text.slice(0, 8000) }
               ]
             })
           })
@@ -48,9 +48,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === 'resetDB') {
     resetDB((err) => {
-      sendResponse({ success: !err });
+      if (err) {
+        console.error("[PrivacyPal] ❌ Failed to reset DB");
+        sendResponse({ success: false });
+      } else {
+        console.log("[PrivacyPal] ✅ DB reset successfully");
+        sendResponse({ success: true });
+      }
     });
-    return true;
+    return true; // IMPORTANTE para permitir sendResponse async
   }
 
   if (message.action === 'getAllPolicies') {
