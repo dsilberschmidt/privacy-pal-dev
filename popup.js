@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const list = document.getElementById("policyList");
     list.innerHTML = "";
 
-    if (policies.length === 0) {
+    if (!policies || policies.length === 0) {
       list.innerHTML = "<li>No policies saved yet.</li>";
       return;
     }
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const li = document.createElement("li");
       const date = new Date(p.timestamp).toLocaleString();
       const summary = p.analysis ? `<div class='summary'><strong>AI Summary:</strong><br>${p.analysis}</div>` : "";
-      li.innerHTML = `<strong>${p.site}</strong> — ${date}<br><a href="${p.url}" target="_blank">${p.url}</a>${summary}`;
+      li.innerHTML = `<strong>${p.site}</strong> - ${date}<br><a href="${p.url}" target="_blank">${p.url}</a>${summary}`;
       list.appendChild(li);
     });
   });
