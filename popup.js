@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       for (const policy of policies) {
         const li = document.createElement("li");
-        li.textContent = `${policy.domain} - ${new Date(policy.timestamp).toLocaleString()}`;
+        li.textContent = `${policy.site} - ${new Date(policy.timestamp).toLocaleString()}`;
         policyList.appendChild(li);
       }
     };
