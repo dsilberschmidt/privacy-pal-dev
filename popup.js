@@ -1,25 +1,45 @@
+
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('policy-list');
+  const container = document.getElementById('policies');
+  const resetBtn = document.getElementById('resetBtn');
 
-  chrome.storage.local.get({ policies: [] }, (result) => {
-    const policies = result.policies;
-    if (policies.length === 0) {
-      container.textContent = 'No policies saved yet.';
-      return;
+  chrome.runtime.getBackgroundPage((bg) => {
+    if (bg && bg.getAllPolicies) {
+      bg.getAllPolicies((err, policies) => {
+        if (err) {
+          container.innerText = 'Failed to load policies.';
+          return;
+        }
+        if (policies.length === 0) {
+          container.innerText = 'No policies stored yet.';
+        } else {
+          policies.forEach(p => {
+            const el = document.createElement('div');
+            el.className = 'policy';
+            el.innerHTML = `<strong>${p.site}</strong><br><small>${p.url}</small><br><em>${p.timestamp}</em>`;
+            container.appendChild(el);
+          });
+        }
+      });
     }
+  });
 
-    const list = document.createElement('ul');
-    policies.forEach(policy => {
-      const item = document.createElement('li');
-      const link = document.createElement('a');
-      link.href = policy.url;
-      link.textContent = `${policy.site} (${new Date(policy.timestamp).toLocaleDateString()})`;
-      link.target = '_blank';
-      item.appendChild(link);
-      list.appendChild(item);
-    });
-
-    container.innerHTML = '';
-    container.appendChild(list);
+  resetBtn.addEventListener('click', () => {
+    if (confirm("Are you sure you want to delete all stored policies?")) {
+      chrome.runtime.getBackgroundPage((bg) => {
+        if (bg && bg.resetDB) {
+          bg.resetDB((err) => {
+            if (err) {
+              alert("❌ Failed to reset DB");
+            } else {
+              alert("✅ PrivacyPal DB cleared!");
+              location.reload();
+            }
+          });
+        } else {
+          alert("⚠️ Cannot access background page");
+        }
+      });
+    }
   });
 });
