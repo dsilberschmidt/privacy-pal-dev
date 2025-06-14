@@ -1,5 +1,1 @@
-.DS_Store
-*.log
-*.zip
-node_modules/
-dist/
+config.js
