@@ -37,3 +37,18 @@ function getAllPolicies(callback) {
     request.onerror = () => callback(request.error, null);
   });
 }
+
+function findPolicyByHash(hash, callback) {
+  openDB((err, db) => {
+    if (err) return callback(err);
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const existing = request.result.find(p => p.hash === hash);
+      callback(null, existing);
+    };
+    request.onerror = () => callback(request.error);
+  });
+}
