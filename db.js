@@ -1,54 +1,79 @@
-const DB_NAME = 'PrivacyPalDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'policies';
 
-function openDB(callback) {
-  const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-  request.onupgradeneeded = (event) => {
-    const db = event.target.result;
-    if (!db.objectStoreNames.contains(STORE_NAME)) {
-      db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-    }
-  };
-
-  request.onsuccess = () => callback(null, request.result);
-  request.onerror = () => callback(request.error, null);
-}
-
-function savePolicy(policy, callback) {
-  openDB((err, db) => {
-    if (err) return console.error(err);
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).add(policy);
-    tx.oncomplete = () => callback && callback(null);
-    tx.onerror = (e) => callback && callback(e);
-  });
-}
-
-function getAllPolicies(callback) {
-  openDB((err, db) => {
-    if (err) return console.error(err);
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.getAll();
-
-    request.onsuccess = () => callback(null, request.result);
-    request.onerror = () => callback(request.error, null);
-  });
-}
-
-function findPolicyByHash(hash, callback) {
-  openDB((err, db) => {
-    if (err) return callback(err);
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      const existing = request.result.find(p => p.hash === hash);
-      callback(null, existing);
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("PrivacyPalDB", 1);
+    request.onupgradeneeded = function (event) {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("policies")) {
+        db.createObjectStore("policies", { keyPath: "hash" });
+      }
     };
-    request.onerror = () => callback(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export function savePolicy(policy) {
+  return openDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("policies", "readwrite");
+      const store = tx.objectStore("policies");
+      const request = store.put(policy);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+export function findPolicyByHash(hash) {
+  return openDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("policies", "readonly");
+      const store = tx.objectStore("policies");
+      const request = store.get(hash);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+export function findLastPolicyBySite(site) {
+  return openDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("policies", "readonly");
+      const store = tx.objectStore("policies");
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const all = request.result;
+        const filtered = all.filter(p => p.site === site);
+        const latest = filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        resolve(latest || null);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+export function getAllPolicies() {
+  return openDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("policies", "readonly");
+      const store = tx.objectStore("policies");
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  });
+}
+
+export function clearPolicies() {
+  return openDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("policies", "readwrite");
+      const store = tx.objectStore("policies");
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   });
 }
