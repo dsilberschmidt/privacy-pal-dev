@@ -1,3 +1,4 @@
+
 function isPolicyPage(url) {
   const policyKeywords = ['privacy', 'terms', 'policy'];
   return policyKeywords.some(kw => url.toLowerCase().includes(kw));
@@ -24,15 +25,9 @@ if (isPolicyPage(window.location.href)) {
   const timestamp = new Date().toISOString();
 
   hashText(text).then(hash => {
-    findPolicyByHash(hash, (err, existing) => {
-      if (existing) {
-        console.log('[PrivacyPal] Policy already saved (hash match)');
-        return;
-      }
-
-      savePolicy({ site, url, timestamp, text, hash }, () => {
-        console.log(`[PrivacyPal] Saved new policy from ${site}`);
-      });
+    chrome.runtime.sendMessage({
+      action: 'checkAndSavePolicy',
+      data: { site, url, timestamp, text, hash }
     });
   });
 }
