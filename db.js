@@ -1,79 +1,56 @@
+// db.js
+const DB_NAME = 'PrivacyPalDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'policies';
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("PrivacyPalDB", 1);
-    request.onupgradeneeded = function (event) {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains("policies")) {
-        db.createObjectStore("policies", { keyPath: "hash" });
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
       }
     };
+  });
+}
+
+async function savePolicy(policy) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.add(policy);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getAllPolicies() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-export function savePolicy(policy) {
-  return openDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("policies", "readwrite");
-      const store = tx.objectStore("policies");
-      const request = store.put(policy);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+async function clearPolicies() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
-export function findPolicyByHash(hash) {
-  return openDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("policies", "readonly");
-      const store = tx.objectStore("policies");
-      const request = store.get(hash);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-export function findLastPolicyBySite(site) {
-  return openDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("policies", "readonly");
-      const store = tx.objectStore("policies");
-      const request = store.getAll();
-      request.onsuccess = () => {
-        const all = request.result;
-        const filtered = all.filter(p => p.site === site);
-        const latest = filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-        resolve(latest || null);
-      };
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-export function getAllPolicies() {
-  return openDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("policies", "readonly");
-      const store = tx.objectStore("policies");
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-export function clearPolicies() {
-  return openDB().then(db => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction("policies", "readwrite");
-      const store = tx.objectStore("policies");
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  });
+async function findPolicyByHash(hash) {
+  const policies = await getAllPolicies();
+  return policies.find(p => p.hash === hash);
 }
